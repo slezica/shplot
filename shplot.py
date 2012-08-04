@@ -13,43 +13,32 @@ def pad(s, cols):
     return s + (cols - len(s)) * " "
 
 def pair(string):
-    key, value = tuple(s.strip() for s in string.split('=', 1))
+    key, value = string.split('=', 1)
     return (key, float(value))
 
-def dataset(string):
-    return dict(pair(subs) for subs in string.split(','))
+def dataset(args):
+    return [pair(arg) for arg in args]
 
-def datasets(strings):
-    return tuple(dataset(s) for s in strings)
+def hbars(width, dataset, scale = None):
+    max_val  = max(value for key, value in dataset)
+    max_klen = max(len(key) for key,value in dataset)
+    scale    = width * 8 / (scale or max_val)
 
-def hbars(width, datasets):
-    max_val  = max(max(ds.itervalues()) for ds in datasets)
-    scale    = width * 8 / max_val
-
-    return _hbars(scale, datasets)
-
-def _hbars(scale, datasets):
-    all_keys = reduce(set.union, (set(s.iterkeys()) for s in datasets))
-    max_klen = max(map(len, all_keys))
-
-    for key in all_keys:
-        first = True
-        for dataset in datasets:
-            value = int(dataset.get(key, 0) * scale)
-
-            if first: print pad(key, max_klen), hbar(value)
-            else:     print pad("" , max_klen), hbar(value)
-
-            first = False
+    for key, value in dataset:
+        value = int(value * scale)
+        print pad(key , max_klen), hbar(value)
 
 def start(options, args):
-    data = datasets(args)
-    hbars(int(options.width), data)
+    if len(args) < 1:
+        print "Usage: shplot [-w|--width=n] key=value [key2=value2,...]"
+    else:
+        data = dataset(args)
+        hbars(int(options.width), data)
 
 if __name__ == "__main__":
     p = optparse.OptionParser()
     
-    p.add_option('--width', '-w', default = '10')
+    p.add_option('--width', '-w', default = '20')
 
     start(*p.parse_args())
 
